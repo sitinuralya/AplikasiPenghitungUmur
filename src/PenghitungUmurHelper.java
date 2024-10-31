@@ -15,6 +15,37 @@ public String hitungUmurDetail(LocalDate lahir, LocalDate sekarang){
     Period period = Period.between(lahir, sekarang);
     return period.getYears() + " tahun, " + period.getMonths() + "bulan, " + period.getDays() + " hari";
 }
+
+// Menerjemahkan teks ke bahasa Indonesia
+private String translateToIndonesian(String text) {
+    try {
+        String urlString = "https://lingva.ml/api/v1/en/id/" + text.replace(" ", "%20");
+        URL url = new URL(urlString);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+        int responseCode = conn.getResponseCode();
+        if (responseCode != 200) {
+            throw new Exception("HTTP response code: " + responseCode);
+        }
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+        String inputLine;
+        StringBuilder content = new StringBuilder();
+        while ((inputLine = in.readLine()) != null) {
+            content.append(inputLine);
+        }
+        in.close();
+        conn.disconnect();
+
+        JSONObject json = new JSONObject(content.toString());
+        return json.getString("translation");
+    } catch (Exception e) {
+        return text + " (Gagal diterjemahkan)";
+    }
+}
+
 // Menghitung hari ulang tahun berikutnya
 public LocalDate hariUlangTahunBerikutnya(LocalDate lahir, LocalDate sekarang) {LocalDate ulangTahunBerikutnya = lahir.withYear(sekarang.getYear());
 if (!ulangTahunBerikutnya.isAfter(sekarang)) {
@@ -75,7 +106,8 @@ public void getPeristiwaBarisPerBaris(LocalDate tanggal, JTextArea txtAreaPerist
             JSONObject event = events.getJSONObject(i);
             String year = event.getString("year");
             String description = event.getString("description");
-            String peristiwa = year + ": " + description;
+            String translatedDescription = translateToIndonesian(description);
+            String peristiwa = year + ": " + translatedDescription;
 
             javax.swing.SwingUtilities.invokeLater(() -> 
                 txtAreaPeristiwa.append(peristiwa + "\n"));
